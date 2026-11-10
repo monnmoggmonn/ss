@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#bfe4f6">
+<title>春風駅 · Harukaze Station</title>
+<style>
+  :root { --ink: #3b2f4d; --glass: rgba(255, 255, 255, .42); --glass-line: rgba(255, 255, 255, .7); --hover: rgba(255, 255, 255, .5); --on: rgba(255, 255, 255, .82); }
+  body.night { --ink: #f6eefc; --glass: rgba(34, 30, 70, .46); --glass-line: rgba(255, 255, 255, .2); --hover: rgba(255, 255, 255, .12); --on: rgba(255, 255, 255, .22); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfeaf7; }
+  body { font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .sky { position: fixed; inset: 0; }
+  #sky-day {
+    background:
+      radial-gradient(90% 60% at 50% 108%, rgba(255, 244, 222, .95) 0%, rgba(255, 244, 222, 0) 70%),
+      linear-gradient(180deg, #9fd8f6 0%, #c6e8f7 36%, #f6e3f1 70%, #ffe9dc 100%);
+  }
+  #sky-night {
+    opacity: 0;
+    background:
+      radial-gradient(90% 60% at 50% 110%, rgba(140, 96, 160, .7) 0%, rgba(140, 96, 160, 0) 70%),
+      linear-gradient(180deg, #0b0e2b 0%, #171b47 42%, #2e2760 76%, #49346d 100%);
+  }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; cursor: grab; }
+  #scene:active { cursor: grabbing; }
+
+  .title {
+    position: fixed; left: max(20px, env(safe-area-inset-left)); bottom: max(20px, env(safe-area-inset-bottom));
+    margin: 0; pointer-events: none; transition: color .8s;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .55), 0 0 18px rgba(255, 255, 255, .5);
+  }
+  body.night .title { text-shadow: 0 1px 10px rgba(10, 8, 40, .8); }
+  .title h1 {
+    margin: 0; font: 700 clamp(34px, 5.2vw, 60px)/1 "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", "Noto Serif CJK JP", serif;
+    letter-spacing: .14em;
+  }
+  .title .en { margin: 10px 0 0; font-size: clamp(12px, 1.4vw, 16px); font-weight: 700; letter-spacing: .34em; text-transform: uppercase; }
+  .title .cap { margin: 8px 0 0; font-size: 12px; line-height: 1.5; opacity: .78; max-width: 36ch; }
+
+  .toolbar {
+    position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom));
+    display: flex; gap: 4px; padding: 5px; border-radius: 17px;
+    background: var(--glass); border: 1px solid var(--glass-line);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+    box-shadow: 0 10px 34px rgba(64, 44, 100, .2), inset 0 1px 0 rgba(255, 255, 255, .35);
+    transition: background .8s, border-color .8s;
+  }
+  .toolbar button {
+    appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; font-weight: 650;
+    display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; border-radius: 12px; cursor: pointer;
+    white-space: nowrap; transition: background .2s, transform .15s; -webkit-tap-highlight-color: transparent;
+  }
+  .toolbar button:hover { background: var(--hover); }
+  .toolbar button:active { transform: scale(.96); }
+  .toolbar button:focus-visible { outline: 2px solid #ff6fa5; outline-offset: 2px; }
+  .toolbar button[aria-pressed="true"], .toolbar button.busy { background: var(--on); }
+  .toolbar svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .toolbar .state { font-size: 11px; font-weight: 600; opacity: .62; min-width: 2ch; }
+  #btn-time .moon, #btn-time[aria-pressed="true"] .sun { display: none; }
+  #btn-time[aria-pressed="true"] .moon { display: block; }
+  #btn-train.busy svg { animation: nudge .7s ease-in-out infinite alternate; }
+  @keyframes nudge { to { transform: translateX(3px); } }
+
+  #msg {
+    position: fixed; inset: 0; margin: auto; width: min(420px, 86vw); height: fit-content; padding: 18px 20px; border-radius: 16px;
+    background: rgba(255, 255, 255, .8); color: #3b2f4d; font-size: 14px; line-height: 1.5; text-align: center;
+  }
+
+  @media (max-width: 620px) {
+    .toolbar { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
+    .toolbar button { flex: 1; justify-content: center; padding: 0 6px; min-height: 44px; }
+    .title { left: max(16px, env(safe-area-inset-left)); bottom: calc(max(12px, env(safe-area-inset-bottom)) + 68px); }
+    .title .cap { max-width: 30ch; }
+  }
+  @media (max-height: 420px) { .title .cap { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .title, .toolbar, .toolbar button { transition: none; }
+    #btn-train.busy svg { animation: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div class="sky" id="sky-day" aria-hidden="true"></div>
+<div class="sky" id="sky-night" aria-hidden="true"></div>
+<canvas id="scene" tabindex="0" role="img" aria-label="Low-poly 3D diorama of Harukaze Station, a rural Japanese railway station in spring"></canvas>
+
+<header class="title">
+  <h1 lang="ja">春風駅</h1>
+  <p class="en">Harukaze Station</p>
+  <p class="cap">A small country stop in cherry-blossom season. Drag to look around, scroll or pinch to zoom.</p>
+</header>
+
+<div class="toolbar" role="toolbar" aria-label="Scene controls">
+  <button id="btn-time" type="button" aria-pressed="false" title="Switch between day and night">
+    <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>
+    <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"/></svg>
+    <span class="label">Day</span>
+  </button>
+  <button id="btn-orbit" type="button" aria-pressed="true" title="Toggle the slow automatic camera orbit">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="4.2"/><circle cx="12" cy="12" r="2.2"/><path d="M18.4 6.6l2.6 2.3-3.3 1"/></svg>
+    <span>Orbit</span><span class="state">on</span>
+  </button>
+  <button id="btn-train" type="button" title="Call the next train">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="13.5" rx="3"/><path d="M4.5 11h15M8.5 14.2h.01M15.5 14.2h.01M8 17l-2 3.5M16 17l2 3.5"/></svg>
+    <span>Train</span>
+  </button>
+</div>
+<p id="msg" role="status" hidden></p>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ───────── seeded random: the scene is identical on every load ───────── */
+function mulberry32(a) {
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const rnd = mulberry32(20250405);
+const rr = (a, b) => a + (b - a) * rnd();
+const pick = a => a[Math.floor(rnd() * a.length)];
+const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = t => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
+const wrap = (v, a, b) => a + (((v - a) % (b - a)) + (b - a)) % (b - a);
+
+/* ───────── layout constants (world units ≈ metres, toy-scaled) ───────── */
+const BX = 36, BZ = 21;                       // block half extents
+const RAIL_Y = 0.58, WIRE_Y = 5.3;
+const PORTAL_X = 22.6, CLIP_X = 24.1;         // tunnel face / where the train vanishes
+const ROAD = { x0: 13.4, x1: 18.6 };
+const PLAT_H = 1.25;
+const HILL = { x0: 23.15, zr: 14, H: 9.8 };
+const SAKURA = [                              // x, z, scale (ground level)
+  [-18, -9, 1.2], [-11.5, -10.6, 1.0], [-5, -9.4, 1.25], [1.2, -10.4, 1.05], [22, -9.5, 1.1],
+  [-29.5, -17.6, 1.0], [31.6, -16.8, 0.9], [-26, 17, 1.15], [-13, 17.2, 1.0], [-0.8, 17.7, 0.85],
+  [10.6, 17.3, 1.0], [22.8, 16.6, 1.1],
+];
+const PATHS = [                               // dirt footpaths painted on the grass
+  [[13.4, -8.5], [10.8, -8.5]],
+  [[13.4, 11.2], [9, 11.4], [5, 11.5], [-1.5, 15.2], [-11, 15.3], [-18, 13.9]],
+  [[13.4, -13], [4, -13.3], [-6, -13.3], [-20, -12.9]],
+  [[-15.6, -3.8], [-18.6, -5.2], [-20.4, -12.9]],
+  [[18.6, -14.7], [25.6, -14.6]],
+  [[18.6, 14.8], [27, 15.2]],
+];
+
+function hillH(x, z) {
+  const ax = Math.abs(x), v = z / HILL.zr;
+  if (ax < HILL.x0 || Math.abs(v) >= 1) return 0;
+  const t = smooth((ax - HILL.x0) / 8.5), b = 1 - v * v, s = Math.sign(x);
+  const n = 1 + 0.09 * Math.sin(ax * 0.8 + z * 0.55 + s) + 0.07 * Math.sin(z * 1.1 - ax * 0.45 + s * 2);
+  const shelf = 6.75 * (1 - smooth((Math.abs(z) - 4.4) / 2.4));   // ground held back by the portal wall, burying the tunnel
+  return Math.max(HILL.H * t * Math.pow(b, 1.5) * n, shelf);
+}
+
+/* ───────── renderer ───────── */
+const canvas = document.getElementById('scene');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+} catch (err) {
+  const msg = document.getElementById('msg');
+  msg.textContent = 'This diorama needs WebGL, which is not available in this browser.';
+  msg.hidden = false;
+  throw err;
+}
+renderer.setClearColor(0x000000, 0);
+renderer.autoClear = false;
+renderer.info.autoReset = false;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled = true;
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+const effect = new OutlineEffect(renderer, { defaultThickness: 0.003, defaultColor: [0.035, 0.022, 0.05] });
+
+const scene = new THREE.Scene();
+const fx = new THREE.Scene();                 // glows + stars, drawn after the ink outlines
+const camera = new THREE.PerspectiveCamera(32, 1, 2, 2400);
+
+/* ───────── canvas-painted textures ───────── */
+const JP_SANS = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo","Noto Sans JP","Noto Sans CJK JP",sans-serif';
+const JP_SERIF = '"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif';
+const LATIN = '"Avenir Next","Helvetica Neue","Segoe UI",Arial,sans-serif';
+function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+function toTex(c) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; return t; }
+
+function grassTexture() {
+  const W = 2048, H = 1196, [c, g] = mkCanvas(W, H);
+  const u = W / (2 * BX), px = x => (x + BX) * u, pz = z => (z + BZ) / (2 * BZ) * H;
+  g.fillStyle = '#8fd96b'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 460; i++) {             // angular colour patches
+    const x = px(rr(-BX, BX)), z = pz(rr(-BZ, BZ)), r = rr(0.8, 3.8) * u, n = 5 + Math.floor(rnd() * 3), a0 = rr(0, 6.28);
+    g.fillStyle = pick(['#9ee078', '#84cf60', '#a9e685', '#7fca5b', '#98dc6e']); g.globalAlpha = rr(0.22, 0.5);
+    g.beginPath();
+    for (let k = 0; k < n; k++) { const a = a0 + k / n * 6.283, q = r * rr(0.7, 1.1); g.lineTo(x + Math.cos(a) * q, z + Math.sin(a) * q * 0.8); }
+    g.closePath(); g.fill();
+  }
+  g.globalAlpha = 1; g.lineCap = g.lineJoin = 'round';
+  for (const [col, w] of [['#dcc48f', 1.7], ['#efdcb1', 1.15]]) {
+    g.strokeStyle = col; g.lineWidth = w * u;
+    for (const p of PATHS) { g.beginPath(); p.forEach(([x, z], i) => i ? g.lineTo(px(x), pz(z)) : g.moveTo(px(x), pz(z))); g.stroke(); }
+  }
+  g.fillStyle = '#efdcb1'; g.fillRect(px(10.6), pz(-10.6), 3 * u, 4.2 * u);      // station forecourt
+  g.lineWidth = 1.7;
+  for (let i = 0; i < 5600; i++) {            // grass blades
+    const x = px(rr(-BX, BX)), z = pz(rr(-BZ, BZ));
+    g.strokeStyle = pick(['#6cc24f', '#b0ec8c', '#79cb58', '#63b84b']); g.globalAlpha = rr(0.35, 0.75);
+    g.beginPath(); g.moveTo(x, z); g.lineTo(x + rr(-3, 3), z - rr(3, 8)); g.stroke();
+  }
+  for (let i = 0; i < 300; i++) {             // tiny wild flowers
+    g.fillStyle = pick(['#ffffff', '#fff2a0', '#ffe3f0', '#fff8d0']); g.globalAlpha = 0.95;
+    g.beginPath(); g.arc(px(rr(-BX, BX)), pz(rr(-BZ, BZ)), rr(1.5, 2.6), 0, 6.283); g.fill();
+  }
+  const petal = (x, z) => {                   // fallen sakura petals
+    g.fillStyle = pick(['#ffd3e3', '#ffb5cf', '#fff0f6', '#ffc4da']); g.globalAlpha = rr(0.75, 1);
+    g.beginPath(); g.ellipse(px(x), pz(z), rr(2.4, 4.2), rr(1.4, 2.3), rr(0, 3.14), 0, 6.283); g.fill();
+  };
+  for (const [x, z, s] of SAKURA) {
+    for (let i = 0, n = 420 * s; i < n; i++) {
+      const a = rr(0, 6.283), r = Math.abs(rnd() + rnd() + rnd() - 1.5) * 4.6 * s;
+      petal(x + Math.cos(a) * r, z + Math.sin(a) * r);
+    }
+  }
+  for (let i = 0; i < 900; i++) petal(rr(-BX, BX), rr(-BZ, BZ));
+  return toTex(c);
+}
+
+function signTexture() {
+  const [c, g] = mkCanvas(1024, 266);
+  g.fillStyle = '#fbf5e4'; g.fillRect(0, 0, 1024, 266);
+  g.strokeStyle = '#1b7a74'; g.lineWidth = 14; g.strokeRect(14, 14, 996, 238);
+  g.fillStyle = '#23303d'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `900 150px ${JP_SERIF}`;
+  ['春', '風', '駅'].forEach((ch, i) => g.fillText(ch, 512 + (i - 1) * 220, 112));
+  g.fillStyle = '#1b7a74'; g.font = `700 30px ${LATIN}`;
+  [...'HARUKAZE STATION'].forEach((ch, i, a) => g.fillText(ch, 512 + (i - (a.length - 1) / 2) * 34, 218));
+  return toTex(c);
+}
+
+function nameboardTexture() {
+  const [c, g] = mkCanvas(1024, 448);
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 1024, 448);
+  g.fillStyle = '#1f2a37'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `900 146px ${JP_SANS}`;
+  ['は', 'る', 'か', 'ぜ'].forEach((ch, i) => g.fillText(ch, 512 + (i - 1.5) * 172, 112));
+  g.font = `800 56px ${JP_SANS}`; g.fillText('春', 462, 222); g.fillText('風', 562, 222);
+  g.fillStyle = '#ff7fae';                    // line-colour band with arrow tips
+  g.beginPath(); g.moveTo(26, 279); g.lineTo(62, 258); g.lineTo(62, 264); g.lineTo(962, 264); g.lineTo(962, 258); g.lineTo(998, 279);
+  g.lineTo(962, 300); g.lineTo(962, 294); g.lineTo(62, 294); g.lineTo(62, 300); g.closePath(); g.fill();
+  g.fillStyle = '#e2578c'; g.fillRect(480, 264, 64, 30);
+  g.fillStyle = '#1f2a37'; g.font = `700 46px ${LATIN}`; g.fillText('Harukaze', 512, 350);
+  g.textAlign = 'left'; g.font = `800 42px ${JP_SANS}`; g.fillText('わかば', 44, 346);
+  g.font = `600 25px ${LATIN}`; g.fillText('Wakaba', 46, 396);
+  g.textAlign = 'right'; g.font = `800 42px ${JP_SANS}`; g.fillText('つきみの', 980, 346);
+  g.font = `600 25px ${LATIN}`; g.fillText('Tsukimino', 978, 396);
+  g.strokeStyle = '#1f2a37'; g.lineWidth = 10; g.strokeRect(5, 5, 1014, 438);
+  return toTex(c);
+}
+
+function clockTexture() {
+  const [c, g] = mkCanvas(256, 256);
+  g.fillStyle = '#fffdf6'; g.fillRect(0, 0, 256, 256);
+  g.translate(128, 128); g.strokeStyle = g.fillStyle = '#23242e'; g.lineCap = 'round';
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * 6.283; g.lineWidth = i % 3 ? 5 : 10;
+    g.beginPath(); g.moveTo(Math.sin(a) * 96, -Math.cos(a) * 96); g.lineTo(Math.sin(a) * 114, -Math.cos(a) * 114); g.stroke();
+  }
+  const hand = (a, len, w) => { g.lineWidth = w; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.sin(a) * len, -Math.cos(a) * len); g.stroke(); };
+  hand((10 + 8 / 60) / 12 * 6.283, 58, 13); hand(8 / 60 * 6.283, 90, 9);
+  g.fillStyle = '#e5443c'; g.beginPath(); g.arc(0, 0, 9, 0, 6.283); g.fill();
+  return toTex(c);
+}
+
+function vendingTexture() {                   // two machine fronts side by side
+  const [c, g] = mkCanvas(512, 512);
+  [['#e5443c', '#ffffff'], ['#4f79c6', '#ffe36e']].forEach(([body, accent], m) => {
+    const x0 = m * 256;
+    g.fillStyle = body; g.fillRect(x0, 0, 256, 512);
+    g.fillStyle = '#f2fbff'; g.fillRect(x0 + 20, 26, 216, 262);
+    for (let row = 0; row < 3; row++) {
+      g.fillStyle = '#cfe3ee'; g.fillRect(x0 + 20, 96 + row * 86, 216, 8);
+      for (let k = 0; k < 6; k++) {
+        const bx = x0 + 30 + k * 34;
+        g.fillStyle = pick(['#ff7f50', '#ffd33d', '#5ec46b', '#4aa3e8', '#ff8fb3', '#8a6cf0', '#f4f4f4', '#3d4a66']);
+        g.fillRect(bx, 40 + row * 86, 24, 54);
+        g.fillStyle = '#ffffff'; g.fillRect(bx + 4, 58 + row * 86, 16, 14);
+        g.fillStyle = k % 3 === m ? '#e5443c' : '#3f6fd6'; g.fillRect(bx + 2, 106 + row * 86, 20, 7);
+      }
+    }
+    g.fillStyle = accent; g.fillRect(x0, 300, 256, 12);
+    g.fillStyle = '#dfe3ea'; g.fillRect(x0 + 152, 328, 84, 70);
+    g.fillStyle = '#2a2c38'; g.fillRect(x0 + 166, 342, 34, 8); g.fillRect(x0 + 166, 362, 56, 22);
+    g.fillStyle = accent; g.font = `900 34px ${LATIN}`; g.textBaseline = 'middle'; g.fillText(m ? 'tea' : 'cola', x0 + 26, 364);
+    g.fillStyle = '#23242e'; g.fillRect(x0 + 28, 420, 200, 62);
+    g.fillStyle = '#3a3c4a'; g.fillRect(x0 + 38, 430, 180, 20);
+  });
+  return toTex(c);
+}
+
+function tomareTexture() {                    // 止まれ road marking, slightly worn
+  const [c, g] = mkCanvas(256, 512);
+  g.fillStyle = '#f5f3e8'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `900 158px ${JP_SANS}`;
+  ['止', 'ま', 'れ'].forEach((ch, i) => g.fillText(ch, 128, 92 + i * 164));
+  g.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 240; i++) { g.globalAlpha = rr(0.3, 0.9); g.fillRect(rr(0, 256), rr(0, 512), rr(2, 9), rr(1, 4)); }
+  return toTex(c);
+}
+
+function glowTexture() {
+  const [c, g] = mkCanvas(128, 128), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.22, 'rgba(255,255,255,.55)');
+  grd.addColorStop(0.55, 'rgba(255,255,255,.14)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  return toTex(c);
+}
+
+/* ───────── materials: toon with a 3-step ramp, ink outline parameters ───────── */
+// 8 texels, 3 tones: N·L < 0 shade, 0–0.5 mid, > 0.5 light
+const gradientMap = new THREE.DataTexture(new Uint8Array([104, 104, 104, 104, 186, 186, 255, 255]), 8, 1, THREE.RedFormat);
+gradientMap.minFilter = gradientMap.magFilter = THREE.NearestFilter;
+gradientMap.generateMipmaps = false; gradientMap.needsUpdate = true;
+
+const INK = [0.035, 0.022, 0.05], allMats = [];
+function reg(m, o) {
+  m.userData.outlineParameters = { thickness: 0.003, color: INK, visible: o.outline !== false };
+  m.userData.cast = o.cast !== false; m.userData.receive = o.receive !== false;
+  allMats.push(m); return m;
+}
+const toon = (color, o = {}) => reg(new THREE.MeshToonMaterial({ color, gradientMap, ...o.p }), o);
+const lit = (color, emissive, o = {}) => toon(color, { ...o, p: { emissive, emissiveIntensity: 0, ...o.p } });
+const board = (map, o = {}) => toon(0xffffff, { cast: false, outline: false, ...o, p: { map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0, ...o.p } });
+
+const M = {
+  grass: toon(0xffffff, { p: { map: grassTexture() }, cast: false, outline: false }),
+  grassSide: toon(0x79c95a), earth1: toon(0xcb925d), earth2: toon(0xa66d48), stone: toon(0xa5abba), stoneDark: toon(0x8d93a8),
+  hill: toon(0x6cc65c), bushA: toon(0x45a85a), bushB: toon(0x9bdc5e),
+  concrete: toon(0xe4e0d6), concreteDark: toon(0xbdb9b2),
+  void: reg(new THREE.MeshBasicMaterial({ color: 0x15121f }), { cast: false, receive: false, outline: false }),
+  ballast: toon(0xb0a8a0), woodDark: toon(0x76493a), wood: toon(0xc98a55), rail: toon(0x7e8494),
+  yellow: toon(0xffd033), black: toon(0x2d2a36), white: toon(0xfaf7f0), cream: toon(0xfff0d2), wallWarm: toon(0xf6d6a2),
+  teal: toon(0x1fa79c), tin: toon(0x9fc9d8), steel: toon(0x8a93a3), asphalt: toon(0x5d6170),
+  paint: toon(0xf4f3ea, { cast: false, outline: false }),
+  pinkA: toon(0xffb3cf), pinkB: toon(0xff98bf), pinkC: toon(0xffd0e1),
+  roofRed: toon(0xe7684e), roofBlue: toon(0x4f79c6), red: toon(0xe5443c), soil: toon(0x8c5a3e),
+  windowLit: lit(0xa8dcf0, 0xffcf7a), windowDark: toon(0x9ccfe6),
+  bulb: lit(0xfff6d8, 0xffe2a8, { cast: false }),
+  lampA: lit(0x6b1f26, 0xff2a20), lampB: lit(0x6b1f26, 0xff2a20),
+  cloud: toon(0xffffff, { cast: false, receive: false }),
+  sign: board(signTexture()), nameboard: board(nameboardTexture()), clock: board(clockTexture()), vending: board(vendingTexture()),
+  tomare: toon(0xffffff, { p: { map: tomareTexture(), alphaTest: 0.45 }, cast: false, outline: false }),
+};
+
+/* ───────── geometry builder: everything sharing a material is merged into one mesh ───────── */
+const X_AXIS = v3(1, 0, 0), ONE = v3(1, 1, 1);
+const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
+class Builder {
+  constructor() { this.buckets = new Map(); this.stack = [new THREE.Matrix4()]; }
+  get cur() { return this.stack[this.stack.length - 1]; }
+  at(x, y, z, ry, fn, s = 1, rx = 0, rz = 0) {    // run fn inside a local transform
+    const m = new THREE.Matrix4().compose(v3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), v3(s, s, s));
+    this.stack.push(this.cur.clone().multiply(m)); fn(); this.stack.pop(); return this;
+  }
+  addM(mat, geo, m) {
+    const g = geo.index ? geo.toNonIndexed() : geo;
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'uv') g.deleteAttribute(k);
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    g.applyMatrix4(m ? this.cur.clone().multiply(m) : this.cur);
+    if (!this.buckets.has(mat)) this.buckets.set(mat, []);
+    this.buckets.get(mat).push(g); return this;
+  }
+  add(mat, geo, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
+    _m.compose(_p.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
+    return this.addM(mat, geo, _m);
+  }
+  box(mat, w, h, d, x, y, z, rx, ry, rz) { return this.add(mat, new THREE.BoxGeometry(w, h, d), x, y, z, rx, ry, rz); }
+  cyl(mat, rt, rb, h, n, x, y, z, rx, ry, rz) { return this.add(mat, new THREE.CylinderGeometry(rt, rb, h, n), x, y, z, rx, ry, rz); }
+  seg(mat, a, b, th = 0.05) {                    // square bar from a to b
+    const d = b.clone().sub(a), L = d.length();
+    const m = new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(X_AXIS, d.normalize()), ONE);
+    return this.addM(mat, new THREE.BoxGeometry(L, th, th), m);
+  }
+  wire(mat, a, b, sag, th = 0.045, n = 8) {      // sagging cable
+    let p = a.clone();
+    for (let i = 1; i <= n; i++) { const t = i / n, q = a.clone().lerp(b, t); q.y -= sag * 4 * t * (1 - t); this.seg(mat, p, q, th); p = q; }
+    return this;
+  }
+  world(x, y, z) { return v3(x, y, z).applyMatrix4(this.cur); }
+  build(parent) {
+    let n = 0;
+    for (const [mat, list] of this.buckets) {
+      const mesh = new THREE.Mesh(mergeGeometries(list, false), mat);
+      list.forEach(g => g.dispose());
+      mesh.castShadow = mat.userData.cast; mesh.receiveShadow = mat.userData.receive;
+      mesh.matrixAutoUpdate = false; parent.add(mesh); n++;
+    }
+    this.buckets.clear(); return n;
+  }
+}
+
+const flat = g => { const f = g.index ? g.toNonIndexed() : g; f.computeVertexNormals(); return f; };
+const ico = r => new THREE.IcosahedronGeometry(r, 1);
+// cross-section [[z, y], …] extruded along +x from 0 to len
+function prismX(pts, len) {
+  const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(p => new THREE.Vector2(-p[0], p[1]))), { depth: len, bevelEnabled: false });
+  return g.rotateY(Math.PI / 2);
+}
+// cross-section [[x, y], …] extruded along +z from 0 to len
+const prismZ = (pts, len) => new THREE.ExtrudeGeometry(new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], p[1]))), { depth: len, bevelEnabled: false });
+function uvRect(g, u0, u1) { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, lerp(u0, u1, uv.getX(i))); return g; }
+function geoFrom(pos) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g; }
+
+const S = new Builder();                       // the static world
+const lampPts = [];                            // night light anchors: { p, k: 'plat' | 'street' | 'shelter' }
+const crossLampPts = [];                       // { p, a: bool }
+const armPivots = [];                          // { p, ry }
+
+/* ───────── floating block ───────── */
+function buildBlock() {
+  S.add(M.grass, new THREE.PlaneGeometry(2 * BX, 2 * BZ), 0, 0, 0, -Math.PI / 2);
+  S.box(M.grassSide, 2 * BX, 0.7, 2 * BZ, 0, -0.36, 0);
+  S.box(M.earth1, 2 * BX - 0.5, 1.8, 2 * BZ - 0.5, 0, -1.6, 0);
+  S.box(M.earth2, 2 * BX - 1.4, 2.0, 2 * BZ - 1.4, 0, -3.5, 0);
+  S.box(M.stone, 2 * BX - 2.6, 1.8, 2 * BZ - 2.6, 0, -5.4, 0);
+  for (const [x, z, r, h] of [[-22, 1, 13, 10], [-5, -2, 16, 14], [13, 2, 14, 12], [27, -1, 8.5, 8], [-31, -3, 6, 6], [4, 10, 7, 6.5], [-13, -9, 8, 7], [20, -9, 6, 5]])
+    S.add(M.stoneDark, flat(new THREE.ConeGeometry(r, h, 6, 1)), x, -6.1 - h / 2, z, Math.PI, rr(0, 1), 0);
+  for (let i = 0; i < 18; i++) {                // rocks poking out of the strata
+    const side = Math.floor(rnd() * 4), w = rr(0.9, 2.4), h = rr(0.5, 1.1), y = rr(-4.1, -1.3), mat = rnd() < 0.7 ? M.stone : M.stoneDark;
+    if (side < 2) S.box(mat, w, h, 0.9, rr(-BX + 2, BX - 2), y, (side ? 1 : -1) * (BZ - 0.5));
+    else S.box(mat, 0.9, h, w, (side === 2 ? 1 : -1) * (BX - 0.5), y, rr(-BZ + 2, BZ - 2));
+  }
+}
+
+/* ───────── tunnel hills ───────── */
+function buildHill(sg) {
+  const xs = [HILL.x0, 24.2], nz = 20, dz = 2 * HILL.zr / nz, P = [];
+  for (let k = 0; k <= 9; k++) xs.push(25.4 + k * (BX - 25.4) / 9);
+  const nx = xs.length - 1;
+  for (let i = 0; i <= nx; i++) {
+    P[i] = [];
+    for (let j = 0; j <= nz; j++) {
+      let x = xs[i], z = -HILL.zr + j * dz;
+      if (i > 1 && i < nx && j > 0 && j < nz) { x += rr(-0.38, 0.38); z += rr(-0.45, 0.45); }
+      const h = hillH(sg * x, z);
+      P[i][j] = v3(sg * x, h > 0.02 ? h : -0.06, z);
+    }
+  }
+  const tri = (out, a, b, c, ok) => {           // push with the winding that satisfies ok(normal)
+    const n = b.clone().sub(a).cross(c.clone().sub(a));
+    const [q, r] = ok(n) ? [b, c] : [c, b];
+    out.push(a.x, a.y, a.z, q.x, q.y, q.z, r.x, r.y, r.z);
+  };
+  const top = [], cut = [], up = n => n.y > 0, outward = n => n.x * sg > 0;
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+    const a = P[i][j], b = P[i + 1][j], c = P[i + 1][j + 1], d = P[i][j + 1];
+    if (a.y < 0 && b.y < 0 && c.y < 0 && d.y < 0) continue;
+    if ((i + j) % 2) { tri(top, a, b, c, up); tri(top, a, c, d, up); } else { tri(top, a, b, d, up); tri(top, b, c, d, up); }
+  }
+  for (let j = 0; j < nz; j++) {                // the slice where the block edge cuts the ridge
+    const a = P[nx][j], b = P[nx][j + 1], a0 = v3(a.x, -0.08, a.z), b0 = v3(b.x, -0.08, b.z);
+    tri(cut, a0, b0, b, outward); tri(cut, a0, b, a, outward);
+  }
+  S.add(M.hill, geoFrom(top)); S.add(M.grassSide, geoFrom(cut));
+
+  for (let i = 0; i < 26; i++) {                // undergrowth
+    const x = sg * rr(25.6, 34.4), z = rr(-12, 12), h = hillH(x, z);
+    if (h < 1.2) continue;
+    bush(x, h - 0.25, z, rr(0.9, 1.7));
+  }
+  for (const [x, z, s] of [[30.5, -9, 1.1], [33, 2.5, 1.25], [29.5, 9.5, 1.0]]) greenTree(sg * x, hillH(sg * x, z * sg) - 0.3, z * sg, s);
+  sakuraTree(sg * 31, hillH(sg * 31, sg * -5.5) - 0.3, sg * -5.5, 0.95);
+}
+
+function buildPortal() {                        // east portal; the west one is the same rotated by π
+  const face = (hw, H, wing) => {              // wall with the tunnel mouth cut out; wing walls slope down at the sides
+    const s = new THREE.Shape();
+    if (wing) { s.moveTo(-wing, 0); s.lineTo(-wing, 1.0); s.lineTo(-hw, H); s.lineTo(hw, H); s.lineTo(wing, 1.0); s.lineTo(wing, 0); }
+    else { s.moveTo(-hw, 0); s.lineTo(-hw, H); s.lineTo(hw, H); s.lineTo(hw, 0); }
+    s.lineTo(2.4, 0); s.lineTo(2.4, 3.5);
+    s.absarc(0, 3.5, 2.4, 0, Math.PI, false); s.lineTo(-2.4, 0); s.closePath();
+    return s;
+  };
+  const ext = (s, d) => new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false, curveSegments: 7 }).rotateY(Math.PI / 2);
+  S.add(M.concrete, ext(face(4.6, 7.0, 7.2), 0.6), PORTAL_X, 0, 0);
+  S.add(M.concreteDark, ext(face(3.1, 6.5), 6.3), PORTAL_X + 0.6, 0, 0);
+  S.box(M.concrete, 1.0, 0.4, 9.8, PORTAL_X + 0.35, 7.2, 0);
+  S.box(M.concreteDark, 0.12, 0.5, 1.7, PORTAL_X - 0.04, 6.4, 0);
+  for (const z of [-3.6, 3.6]) S.box(M.concrete, 0.9, 6.6, 0.5, PORTAL_X + 0.1, 3.3, z);
+  S.add(M.void, new THREE.PlaneGeometry(5.4, 6.3), CLIP_X, 3.15, 0, 0, -Math.PI / 2);
+}
+
+/* ───────── vegetation ───────── */
+function sakuraTree(x, y, z, s) {
+  S.at(x, y, z, rr(0, 6.28), () => {
+    S.cyl(M.woodDark, 0.2, 0.36, 2.7, 6, 0, 1.35, 0, 0, 0, rr(-0.1, 0.1));
+    for (let k = 0; k < 3; k++) { const a = k * 2.1 + rr(-0.4, 0.4); S.seg(M.woodDark, v3(0, 1.8, 0), v3(Math.cos(a) * 1.5, 3.3, Math.sin(a) * 1.5), 0.2); }
+    const n = 8;
+    for (let k = 0; k < n; k++) {
+      const top = k === 0, a = k / (n - 1) * 6.283 + rr(-0.3, 0.3), r = top ? 0 : rr(0.9, 1.6);
+      const py = top ? 4.9 : rr(3.3, 4.2), mat = top ? M.pinkC : pick([M.pinkA, M.pinkA, M.pinkB, M.pinkC]);
+      S.add(mat, ico(top ? 1.5 : rr(1.1, 1.5)), Math.cos(a) * r, py, Math.sin(a) * r, 0, rr(0, 3), 0, 1, rr(0.78, 0.9), 1);
+    }
+  }, s);
+}
+function greenTree(x, y, z, s) {
+  S.at(x, y, z, rr(0, 6.28), () => {
+    S.cyl(M.woodDark, 0.18, 0.3, 2.2, 6, 0, 1.1, 0);
+    S.add(M.bushA, ico(1.5), 0, 3.0, 0, 0, rr(0, 3), 0, 1, 0.9, 1);
+    S.add(M.bushA, ico(1.05), 0.7, 4.0, 0.2, 0, rr(0, 3), 0);
+    S.add(M.bushB, ico(0.8), -0.8, 3.7, -0.5, 0, rr(0, 3), 0);
+  }, s);
+}
+function bush(x, y, z, s) {
+  S.at(x, y, z, rr(0, 6.28), () => {
+    const mat = rnd() < 0.62 ? M.bushA : M.bushB;
+    S.add(mat, ico(0.72), 0, 0.42, 0, 0, rr(0, 3), 0, 1, 0.78, 1);
+    S.add(mat, ico(0.5), 0.62, 0.3, 0.15, 0, rr(0, 3), 0, 1, 0.8, 1);
+    if (rnd() < 0.6) S.add(mat, ico(0.42), -0.5, 0.26, -0.3, 0, rr(0, 3), 0, 1, 0.8, 1);
+  }, s);
+}
+
+/* ───────── track + overhead line ───────── */
+function buildTrack() {
+  const L = 2 * CLIP_X - 0.1;
+  S.add(M.ballast, prismX([[-2.15, 0], [-1.6, 0.3], [1.6, 0.3], [2.15, 0]], L), -L / 2, 0, 0);
+  for (let x = -23.6; x <= 23.7; x += 0.8) if (x < ROAD.x0 - 0.2 || x > ROAD.x1 + 0.2) S.box(M.woodDark, 0.3, 0.12, 2.5, x, 0.36, 0);
+  for (const z of [-0.72, 0.72]) S.box(M.rail, L, 0.16, 0.13, 0, 0.5, z);
+
+  const MAST_X = [-21, -10.5, 0, 10.5, 21.2], MZ = 2.8, MSG_Y = 6.3;
+  for (const x of MAST_X) {
+    S.box(M.concrete, 0.55, 0.3, 0.55, x, 0.15, MZ);
+    S.box(M.steel, 0.2, 7.0, 0.2, x, 3.5, MZ);
+    S.seg(M.steel, v3(x, MSG_Y + 0.15, MZ), v3(x, MSG_Y + 0.15, -0.15), 0.09);
+    S.seg(M.steel, v3(x, 4.9, MZ), v3(x, MSG_Y + 0.1, 0.9), 0.07);
+    S.seg(M.steel, v3(x, WIRE_Y + 0.32, MZ), v3(x, WIRE_Y + 0.12, 0.2), 0.06);
+    S.cyl(M.white, 0.09, 0.09, 0.24, 6, x, MSG_Y + 0.15, MZ - 0.55, Math.PI / 2);
+    S.cyl(M.white, 0.08, 0.08, 0.22, 6, x, WIRE_Y + 0.3, MZ - 0.55, Math.PI / 2);
+    S.box(M.steel, 0.06, 0.16, 0.06, x, WIRE_Y + 0.07, 0);
+  }
+  S.box(M.black, 2 * CLIP_X, 0.05, 0.05, 0, WIRE_Y, 0);                      // contact wire
+  const pts = [[-CLIP_X, 5.75], ...MAST_X.map(x => [x, MSG_Y]), [CLIP_X, 5.75]];
+  for (let i = 0; i < pts.length - 1; i++) {                                  // messenger wire + droppers
+    const [xa, ya] = pts[i], [xb, yb] = pts[i + 1], inner = i > 0 && i < pts.length - 2, sag = inner ? 0.5 : 0.04;
+    S.wire(M.black, v3(xa, ya, 0), v3(xb, yb, 0), sag, 0.05, inner ? 8 : 3);
+    if (inner) for (let k = 1; k < 5; k++) {
+      const t = k / 5, y = lerp(ya, yb, t) - sag * 4 * t * (1 - t);
+      S.box(M.black, 0.03, y - WIRE_Y, 0.03, lerp(xa, xb, t), (y + WIRE_Y) / 2, 0);
+    }
+  }
+}
+
+/* ───────── station ───────── */
+function win(x, y, z, w, h, ry, mat) {
+  S.box(M.white, w + 0.22, h + 0.22, 0.1, x, y, z, 0, ry, 0);
+  S.box(mat, w, h, 0.16, x, y, z, 0, ry, 0);
+  S.box(M.white, 0.06, h, 0.2, x, y, z, 0, ry, 0);
+  S.box(M.white, w, 0.06, 0.2, x, y, z, 0, ry, 0);
+}
+function gableRoof(mat, w, d, h, rise, ov, alongZ) {   // ridge along z (alongZ) or along x
+  const half = (alongZ ? w : d) / 2, len = (alongZ ? d : w) + 2 * ov, a = Math.atan2(rise, half), L = (half + ov) / Math.cos(a), th = 0.22;
+  for (const sg of [1, -1]) {
+    const off = sg * (L / 2 * Math.cos(a) + th / 2 * Math.sin(a)), cy = h + rise - L / 2 * Math.sin(a) + th / 2 * Math.cos(a);
+    if (alongZ) S.box(mat, L, th, len, off, cy, 0, 0, 0, -sg * a); else S.box(mat, len, th, L, 0, cy, off, sg * a, 0, 0);
+  }
+  if (alongZ) S.box(mat, 0.36, 0.2, len + 0.1, 0, h + rise + 0.2, 0); else S.box(mat, len + 0.1, 0.2, 0.36, 0, h + rise + 0.2, 0);
+}
+
+function buildStation() {
+  // platform
+  S.box(M.concreteDark, 24, 1.1, 3.85, -1, 0.55, -3.825);
+  S.box(M.concrete, 24.1, 0.15, 4.1, -1, 1.175, -3.7);
+  S.box(M.paint, 24, 0.02, 0.12, -1, 1.26, -1.85);
+  S.box(M.yellow, 24, 0.03, 0.42, -1, 1.265, -2.5);
+  S.add(M.concreteDark, prismZ([[-15.6, 0], [-13, 0], [-13, PLAT_H]], 4.05), 0, 0, -5.75);
+  S.add(M.concreteDark, prismZ([[11, 0], [13.2, 0], [11, PLAT_H]], 4.05), 0, 0, -5.75);
+  // fence
+  for (let x = -12.9; x <= 4.05; x += 1.3) S.box(M.white, 0.1, 1.0, 0.1, x, 1.75, -5.62);
+  for (const y of [1.7, 2.1]) S.box(M.white, 17, 0.08, 0.06, -4.45, y, -5.62);
+
+  // shelter with corrugated roof
+  const sx = -2;
+  for (const dx of [-3.2, 3.2]) { S.box(M.steel, 0.16, 3.5, 0.16, sx + dx, 3.0, -3.2); S.box(M.steel, 0.16, 3.25, 0.16, sx + dx, 2.875, -5.3); }
+  S.box(M.steel, 6.8, 0.16, 0.14, sx, 4.72, -3.2); S.box(M.steel, 6.8, 0.16, 0.14, sx, 4.44, -5.3);
+  S.at(sx, 4.83, -4.075, 0, () => {
+    S.box(M.tin, 7.8, 0.1, 3.8, 0, 0, 0);
+    for (let x = -3.8; x <= 3.81; x += 0.38) S.box(M.tin, 0.15, 0.09, 3.8, x, 0.09, 0);
+    S.box(M.steel, 7.9, 0.16, 0.1, 0, -0.02, 1.92);
+  }, 1, -0.133);
+  S.box(M.wood, 6.4, 1.9, 0.08, sx, 2.3, -5.36);
+  for (const dx of [-3.2, 3.2]) S.box(M.wood, 0.08, 1.9, 1.2, sx + dx, 2.3, -4.72);
+  for (const bx of [sx - 1.6, sx + 1.6]) {       // benches
+    S.box(M.wood, 2.2, 0.1, 0.55, bx, 1.75, -4.72); S.box(M.wood, 2.2, 0.4, 0.08, bx, 2.2, -4.98);
+    for (const dx of [-0.9, 0.9]) S.box(M.black, 0.08, 0.5, 0.5, bx + dx, 1.5, -4.72);
+  }
+  S.box(M.bulb, 1.8, 0.06, 0.2, sx, 4.58, -4.2);
+  lampPts.push({ p: v3(sx, 4.3, -4.1), k: 'shelter' });
+  // hanging clock
+  S.box(M.black, 0.06, 0.7, 0.06, sx, 4.55, -2.75);
+  S.cyl(M.black, 0.52, 0.52, 0.26, 16, sx, 3.72, -2.75, Math.PI / 2);
+  S.add(M.clock, new THREE.CircleGeometry(0.44, 20), sx, 3.72, -2.61);
+  S.add(M.clock, new THREE.CircleGeometry(0.44, 20), sx, 3.72, -2.89, 0, Math.PI, 0);
+
+  // station name board
+  for (const dx of [-1.45, 1.45]) S.box(M.white, 0.12, 2.5, 0.12, -9.2 + dx, 2.5, -5.05);
+  S.box(M.white, 3.3, 1.5, 0.1, -9.2, 3.0, -5.05);
+  S.add(M.nameboard, new THREE.PlaneGeometry(3.2, 1.4), -9.2, 3.0, -4.99);
+  S.add(M.nameboard, new THREE.PlaneGeometry(3.2, 1.4), -9.2, 3.0, -5.11, 0, Math.PI, 0);
+
+  // vending machines + bins
+  [[2.6, M.red, 0], [3.65, M.roofBlue, 0.5]].forEach(([x, mat, u0]) => {
+    S.box(mat, 0.95, 1.9, 0.75, x, 2.2, -5.2);
+    S.add(M.vending, uvRect(new THREE.PlaneGeometry(0.85, 1.78), u0, u0 + 0.5), x, 2.2, -4.815);
+  });
+  [[4.8, M.steel], [5.4, M.teal]].forEach(([x, mat]) => { S.box(mat, 0.5, 0.8, 0.5, x, 1.65, -5.4); S.box(M.black, 0.3, 0.05, 0.3, x, 2.06, -5.4); });
+
+  // platform lamps
+  for (const x of [-12.2, -6.8, 10.3]) {
+    S.at(x, PLAT_H, -5.3, 0, () => {
+      S.cyl(M.steel, 0.07, 0.09, 4.0, 6, 0, 2.0, 0);
+      S.box(M.steel, 0.08, 0.08, 1.0, 0, 3.96, 0.46);
+      S.box(M.steel, 0.36, 0.12, 0.8, 0, 3.92, 0.95);
+      S.box(M.bulb, 0.26, 0.05, 0.66, 0, 3.84, 0.95);
+      lampPts.push({ p: S.world(0, 3.7, 0.95), k: 'plat' });
+    });
+  }
+
+  // station building on a raised pad, teal gable roof facing the platform
+  S.box(M.concreteDark, 6.6, 1.1, 5.55, 7.5, 0.55, -8.525);
+  S.box(M.concrete, 6.7, 0.15, 5.6, 7.5, 1.175, -8.55);
+  for (let i = 0; i < 3; i++) { const h = PLAT_H - (i + 1) * 0.31; S.box(M.concrete, 0.5, h, 1.9, 11.05 + i * 0.5, h / 2, -8.5); }
+  S.at(7.5, PLAT_H, -8.7, 0, () => {
+    const w = 6, d = 4.8, h = 3.2, rise = 1.9;
+    S.box(M.cream, w, h, d, 0, h / 2, 0);
+    S.box(M.woodDark, w + 0.08, 0.9, d + 0.08, 0, 0.45, 0);
+    S.add(M.cream, prismZ([[-w / 2, 0], [w / 2, 0], [0, rise]], d), 0, h, -d / 2);
+    gableRoof(M.teal, w, d, h, rise, 0.6, true);
+    // platform side: door, ticket window, 春風駅 sign
+    S.box(M.woodDark, 1.5, 2.35, 0.1, 1.2, 1.175, d / 2); S.box(M.black, 1.2, 2.15, 0.14, 1.2, 1.075, d / 2);
+    win(-1.35, 1.85, d / 2, 1.6, 1.1, 0, M.windowLit);
+    S.box(M.woodDark, 3.2, 0.95, 0.12, 0, 3.1, d / 2 + 0.06);
+    S.add(M.sign, new THREE.PlaneGeometry(3.0, 0.78), 0, 3.1, d / 2 + 0.13);
+    S.add(M.windowLit, new THREE.CircleGeometry(0.34, 10), 0, 4.2, d / 2 + 0.02);
+    // road side: entrance with a small sign and awning
+    S.box(M.woodDark, 0.1, 2.35, 1.5, w / 2, 1.175, 0.2); S.box(M.black, 0.14, 2.15, 1.2, w / 2, 1.075, 0.2);
+    S.box(M.teal, 1.1, 0.1, 2.4, w / 2 + 0.5, 2.45, 0.2, 0, 0, -0.25);
+    S.box(M.woodDark, 0.12, 0.62, 2.0, w / 2 + 0.06, 2.98, 0.2);
+    S.add(M.sign, new THREE.PlaneGeometry(1.9, 0.5), w / 2 + 0.13, 2.98, 0.2, 0, Math.PI / 2, 0);
+    win(w / 2, 1.9, -1.55, 0.9, 1.0, Math.PI / 2, M.windowLit);
+    win(-w / 2, 1.9, -0.95, 1.2, 1.0, Math.PI / 2, M.windowLit); win(-w / 2, 1.9, 0.95, 1.2, 1.0, Math.PI / 2, M.windowLit);
+    win(-1.4, 1.9, -d / 2, 1.4, 1.0, 0, M.windowLit); win(1.4, 1.9, -d / 2, 1.4, 1.0, 0, M.windowDark);
+  });
+  // post box by the entrance
+  S.cyl(M.black, 0.2, 0.2, 0.2, 8, 12.75, 0.1, -6.55); S.cyl(M.red, 0.3, 0.3, 1.0, 8, 12.75, 0.7, -6.55); S.cyl(M.red, 0.35, 0.35, 0.12, 8, 12.75, 1.26, -6.55);
+}
+
+/* ───────── road + level crossing ───────── */
+function buildRoad() {
+  const w = ROAD.x1 - ROAD.x0, cx = (ROAD.x0 + ROAD.x1) / 2;
+  S.add(M.asphalt, prismX([[-BZ, 0], [-BZ, 0.08], [-5, 0.08], [-2.4, 0.52], [2.4, 0.52], [5, 0.08], [BZ, 0.08], [BZ, 0]], w), ROAD.x0, 0, 0);
+  for (const sg of [-1, 1]) {
+    for (const x of [ROAD.x0 + 0.22, ROAD.x1 - 0.22]) S.box(M.paint, 0.12, 0.02, BZ - 5.2, x, 0.09, sg * (5.2 + (BZ - 5.2) / 2));
+    for (let z = 7.2; z < BZ - 1; z += 2.4) S.box(M.paint, 0.12, 0.02, 1.2, cx, 0.09, sg * (z + 0.6));
+    S.box(M.yellow, w - 0.2, 0.02, 0.14, cx, 0.53, sg * 2.15);
+  }
+  S.box(M.paint, 2.3, 0.02, 0.4, cx - 1.25, 0.09, 5.8); S.box(M.paint, 2.3, 0.02, 0.4, cx + 1.25, 0.09, -5.8);     // stop lines
+  S.add(M.tomare, new THREE.PlaneGeometry(1.7, 3.5), cx - 1.25, 0.095, 8.6, -Math.PI / 2, 0, 0);
+  S.add(M.tomare, new THREE.PlaneGeometry(1.7, 3.5), cx + 1.25, 0.095, -8.6, -Math.PI / 2, 0, Math.PI);
+
+  const signal = ry => () => {
+    S.box(M.concrete, 0.5, 0.2, 0.5, 0, 0.1, 0);
+    for (let i = 0; i < 10; i++) S.cyl(i % 2 ? M.black : M.yellow, 0.1, 0.1, 0.44, 8, 0, 0.42 + i * 0.44, 0);
+    for (const a of [0.62, -0.62]) S.at(0, 4.05, 0.16, 0, () => { for (let k = -2; k <= 2; k++) S.box(k % 2 ? M.black : M.yellow, 0.42, 0.2, 0.05, k * 0.42, 0, 0); }, 1, 0, a);
+    S.box(M.black, 1.3, 0.1, 0.1, 0, 3.1, 0);
+    for (const lx of [-0.5, 0.5]) {
+      S.cyl(M.black, 0.33, 0.33, 0.14, 12, lx, 3.1, 0, Math.PI / 2);
+      for (const sz of [1, -1]) {
+        const a = lx * sz < 0;
+        S.cyl(a ? M.lampA : M.lampB, 0.2, 0.2, 0.06, 12, lx, 3.1, sz * 0.09, Math.PI / 2);
+        crossLampPts.push({ p: S.world(lx, 3.1, sz * 0.24), a });
+      }
+    }
+    S.box(M.steel, 0.5, 1.15, 0.4, 0.1, 0.575, 0.4);
+    armPivots.push({ p: S.world(0.4, 1.15, 0.4), ry });
+  };
+  S.at(ROAD.x0 - 0.55, 0, 3.7, 0, signal(0));
+  S.at(ROAD.x1 + 0.55, 0, -3.7, Math.PI, signal(Math.PI));
+}
+
+/* ───────── utility poles ───────── */
+function buildUtilities() {
+  const poles = {};
+  const pole = (id, x, z, ry, o) => {
+    const H = o.h || 8.6; poles[id] = { x, z, ry, H };
+    S.at(x, 0, z, ry, () => {
+      S.cyl(M.concreteDark, 0.15, 0.2, H, 7, 0, H / 2, 0);
+      if (o.top) { S.box(M.steel, 2.0, 0.12, 0.12, 0, H - 0.5, 0); for (const lx of [-0.8, 0, 0.8]) S.cyl(M.white, 0.06, 0.08, 0.2, 6, lx, H - 0.34, 0); }
+      if (o.two) { S.box(M.steel, 1.3, 0.1, 0.1, 0, H - o.two, 0); for (const lx of [-0.5, 0.5]) S.cyl(M.white, 0.06, 0.07, 0.18, 6, lx, H - o.two + 0.14, 0); }
+      if (o.tf) { S.cyl(M.steel, 0.34, 0.34, 0.9, 8, 0.44, H - 2.9, 0); S.box(M.steel, 0.5, 0.08, 0.1, 0.22, H - 2.5, 0); }
+      if (o.lamp) {
+        S.seg(M.steel, v3(0, 5.6, 0), v3(-1.3, 5.92, 0), 0.07);
+        S.box(M.steel, 0.74, 0.12, 0.32, -1.55, 5.9, 0); S.box(M.bulb, 0.58, 0.05, 0.22, -1.55, 5.82, 0);
+        lampPts.push({ p: S.world(-1.55, 5.65, 0), k: 'street' });
+      }
+    });
+  };
+  const tap = (id, lx, dy) => { const q = poles[id]; return v3(q.x + lx * Math.cos(q.ry), q.H - dy, q.z - lx * Math.sin(q.ry)); };
+  pole('r1', 19.7, -17.5, 0, { top: 1 });
+  pole('r2', 19.7, -9, 0, { top: 1, two: 1.5, lamp: 1 });
+  pole('r3', 19.7, 9, 0, { top: 1, two: 1.5, tf: 1, lamp: 1 });
+  pole('r4', 19.7, 17.5, 0, { top: 1 });
+  pole('f1', 8.2, 9.6, Math.PI / 2, { h: 7.4, two: 0.4 });
+  pole('f2', -11.8, 6.4, Math.PI / 2, { h: 7.4, two: 0.4 });
+  for (const [a, b, sag] of [['r1', 'r2', 0.6], ['r2', 'r3', 1.0], ['r3', 'r4', 0.6]])
+    for (const lx of [-0.8, 0, 0.8]) S.wire(M.black, tap(a, lx, 0.24), tap(b, lx, 0.24), sag, 0.045, 10);
+  for (const lx of [-0.5, 0.5]) {
+    S.wire(M.black, tap('r3', lx, 1.27), tap('f1', -lx, 0.17), 0.7, 0.04, 10);
+    S.wire(M.black, tap('f1', lx, 0.17), tap('f2', lx, 0.17), 1.0, 0.04, 12);
+  }
+  S.wire(M.black, tap('f2', 0, 0.3), v3(-15.5, 4.2, 11.3), 0.5, 0.035);       // service drops
+  S.wire(M.black, tap('f1', 0, 0.3), v3(7.1, 4.1, 13.6), 0.4, 0.035);
+  S.wire(M.black, tap('r2', -0.5, 1.27), v3(11.0, 4.3, -7.6), 0.6, 0.035);
+  S.wire(M.black, tap('r1', 0.5, 0.4), v3(25.6, 4.5, -17.2), 0.4, 0.035);
+}
+
+/* ───────── village ───────── */
+function house(x, z, ry, o) {
+  const { w, d, h, wall, roof, rise = 1.5 } = o;
+  S.at(x, 0, z, ry, () => {
+    S.box(M.concrete, w + 0.3, 0.25, d + 0.3, 0, 0.125, 0);
+    S.at(0, 0.25, 0, 0, () => {
+      S.box(wall, w, h, d, 0, h / 2, 0);
+      S.add(wall, prismX([[-d / 2, 0], [d / 2, 0], [0, rise]], w), -w / 2, h, 0);
+      gableRoof(roof, w, d, h, rise, 0.45, false);
+      const wm = () => rnd() < 0.78 ? M.windowLit : M.windowDark;
+      if (o.shed) { S.box(M.woodDark, 1.2, 1.6, 0.1, 0, 0.8, d / 2); return; }
+      const dx = w * 0.2;
+      S.box(M.woodDark, 0.95, 1.9, 0.12, dx, 0.95, d / 2); S.box(M.concrete, 1.3, 0.14, 0.5, dx, -0.05, d / 2 + 0.3);
+      S.box(roof, 1.5, 0.1, 0.7, dx, 2.15, d / 2 + 0.3, 0.3, 0, 0);
+      win(dx - w * 0.42, 1.55, d / 2, 1.3, 1.0, 0, wm());
+      if (w > 5) win(dx + 1.5, 1.6, d / 2, 0.8, 0.9, 0, wm());
+      win(-w * 0.24, 1.55, -d / 2, 1.2, 1.0, 0, wm()); win(w * 0.24, 1.55, -d / 2, 1.2, 1.0, 0, wm());
+      win(w / 2, 1.55, 0, 1.1, 1.0, Math.PI / 2, wm()); win(-w / 2, 1.55, 0, 1.1, 1.0, Math.PI / 2, wm());
+      win(w / 2, h + 0.55, 0, 0.55, 0.5, Math.PI / 2, wm());
+      if (o.chimney) S.box(M.concreteDark, 0.5, 1.3, 0.5, -w * 0.28, h + rise * 0.75, -d * 0.2);
+    });
+  });
+}
+
+function buildVillage() {
+  house(-18.5, 11, 0.12, { w: 6, d: 4.6, h: 2.9, wall: M.cream, roof: M.roofRed, chimney: 1 });
+  house(4.5, 13.8, -0.08, { w: 5.2, d: 4.2, h: 2.8, wall: M.wallWarm, roof: M.roofBlue });
+  house(-21, -15.8, 0, { w: 5.4, d: 4.4, h: 2.8, wall: M.white, roof: M.asphalt, chimney: 1 });
+  house(-6.5, -16.2, 0.06, { w: 5.8, d: 4.4, h: 3.0, wall: M.wallWarm, roof: M.roofRed });
+  house(25.6, -17.2, 0, { w: 4.6, d: 4, h: 2.7, wall: M.cream, roof: M.roofBlue, rise: 1.3 });
+  house(28, 17.4, 0, { w: 3.2, d: 2.6, h: 2.0, wall: M.wood, roof: M.asphalt, rise: 0.9, shed: 1 });
+
+  // vegetable patch
+  S.box(M.earth2, 7.2, 0.1, 6.2, -6.5, 0.05, 10.5);
+  [8.3, 9.4, 10.5, 11.6, 12.7].forEach((z, row) => {
+    S.box(M.soil, 6.5, 0.22, 0.62, -6.5, 0.16, z);
+    for (let x = -9.4; x <= -3.5; x += row === 3 ? 0.95 : 0.62) {
+      const jx = x + rr(-0.06, 0.06);
+      if (row === 0 || row === 2) S.add(row ? M.bushA : M.bushB, ico(0.27), jx, 0.42, z, 0, rr(0, 3), 0, 1, 0.75, 1);
+      else if (row === 1) S.add(M.bushA, new THREE.ConeGeometry(0.09, 0.75, 5), jx, 0.6, z, rr(-0.15, 0.15), 0, rr(-0.15, 0.15));
+      else if (row === 3) {
+        S.box(M.wood, 0.05, 1.1, 0.05, jx, 0.8, z); S.add(M.bushA, ico(0.3), jx, 0.85, z, 0, rr(0, 3), 0, 1, 1.2, 1);
+        S.add(M.red, ico(0.09), jx + 0.2, 0.8, z + 0.18); S.add(M.red, ico(0.08), jx - 0.16, 1.0, z + 0.2);
+      } else S.add(M.bushB, new THREE.ConeGeometry(0.14, 0.34, 5), jx, 0.42, z);
+    }
+  });
+  for (let x = -10.2; x <= -2.75; x += 1.24) for (const z of [7.2, 13.8]) S.box(M.wood, 0.1, 0.75, 0.1, x, 0.37, z);
+  for (let z = 8.3; z <= 13; z += 1.1) for (const x of [-10.2, -2.76]) S.box(M.wood, 0.1, 0.75, 0.1, x, 0.37, z);
+  for (const z of [7.2, 13.8]) S.box(M.wood, 7.5, 0.07, 0.06, -6.48, 0.58, z);
+  S.box(M.wood, 0.06, 0.07, 6.6, -10.2, 0.58, 10.5); S.box(M.wood, 0.06, 0.07, 4.2, -2.76, 0.58, 9.3);
+  S.at(-3.5, 0, 13.1, -0.5, () => {             // scarecrow
+    S.box(M.wood, 0.08, 1.8, 0.08, 0, 0.9, 0); S.box(M.wood, 1.3, 0.08, 0.08, 0, 1.35, 0);
+    S.box(M.roofBlue, 0.5, 0.6, 0.22, 0, 1.2, 0); S.add(M.wallWarm, ico(0.2), 0, 1.72, 0);
+    S.add(M.wood, new THREE.ConeGeometry(0.38, 0.28, 8), 0, 1.95, 0);
+  });
+
+  for (const [x, z, s] of SAKURA) sakuraTree(x, 0, z, s);
+  for (const [x, z] of [[-23, 5.2], [-22, -5.6], [-16.3, 4.6], [-7, 4.6], [-2.5, 5.0], [5.5, 5.0], [11.4, 6.3], [21.6, 5.6], [22.3, -5.2], [21.9, -13.4],
+    [11.6, -16], [2, -17.6], [-13.5, -17.2], [-27, -15.2], [-33, -18.6], [-33.6, 17.6], [-20.6, 17.9], [-6, 17.6], [21.2, 11.8], [31.5, 18.4],
+    [33.2, -19], [-1.8, -11.9], [-14.6, -7.2], [3, -7.4], [-23.4, 12.6], [12, 14.2], [-30, 15.6], [9.6, -11.4]]) bush(x, 0, z, rr(0.85, 1.5));
+
+  for (const [a, r, y, s] of [[0.5, 52, -4, 1.3], [1.75, 46, 1.5, 0.95], [2.9, 56, -8, 1.5], [4.05, 47, 0.5, 1.05], [5.3, 53, -5.5, 1.25]]) {
+    S.at(Math.cos(a) * r, y, Math.sin(a) * r, -a + 1.57, () => {            // clouds drifting around the island
+      S.add(M.cloud, ico(2.6), 0, 0, 0, 0, 0, 0, 1.25, 0.62, 1); S.add(M.cloud, ico(2.0), 2.9, -0.2, 0.4, 0, 1, 0, 1.2, 0.6, 1);
+      S.add(M.cloud, ico(1.7), -2.8, -0.3, -0.2, 0, 2, 0, 1.2, 0.6, 1); S.add(M.cloud, ico(1.3), 4.9, -0.5, 0, 0, 0, 0, 1.2, 0.55, 1);
+      S.add(M.cloud, ico(1.5), 0.9, 0.9, -0.3, 0, 0, 0, 1.1, 0.65, 1);
+    }, s);
+  }
+}
+
+buildBlock(); buildHill(1); buildHill(-1); buildPortal(); S.at(0, 0, 0, Math.PI, buildPortal);
+buildTrack(); buildStation(); buildRoad(); buildUtilities(); buildVillage();
+const staticMeshes = S.build(scene);
+
+/* ───────── level-crossing arms (dynamic) ───────── */
+const arms = armPivots.map(({ p, ry }) => {
+  const pivot = new THREE.Group(), arm = new THREE.Group(), b = new Builder();
+  pivot.position.copy(p); pivot.rotation.y = ry; pivot.add(arm); scene.add(pivot);
+  for (let i = 0; i < 10; i++) b.box(i % 2 ? M.black : M.yellow, 0.54, 0.13, 0.13, 0.5 + i * 0.54, 0, 0);
+  b.box(M.black, 0.9, 0.22, 0.2, -0.2, 0, 0);
+  b.build(arm); return arm;
+});
+
+/* ───────── train (dynamic, clipped at both tunnel mouths) ───────── */
+const clipPlanes = [new THREE.Plane(v3(-1, 0, 0), CLIP_X), new THREE.Plane(v3(1, 0, 0), CLIP_X)];
+const clipped = m => { m.clippingPlanes = clipPlanes; m.clipShadows = true; return m; };
+const TM = {
+  white: clipped(toon(0xfdfbf6)), pink: clipped(toon(0xff6fa5)), win: clipped(lit(0x3d5c7e, 0xffd995)), dark: clipped(toon(0x3d3f4f)),
+  roof: clipped(toon(0x9da4b3)), head: clipped(lit(0xfff3c4, 0xfff0c0)), tail: clipped(lit(0xc8323a, 0xff3030)),
+};
+const train = new THREE.Group();
+const TRAIN_HALF = 9.65;
+(function buildTrain() {
+  const b = new Builder(), Lc = 9.4;
+  for (const front of [1, -1]) {
+    b.at(front * (Lc / 2 + 0.25), 0, 0, front > 0 ? 0 : Math.PI, () => {      // local +x is the cab end
+      b.add(TM.white, prismX([[-1.45, 0.95], [-1.45, 3.5], [-1.22, 3.86], [-0.7, 4.0], [0.7, 4.0], [1.22, 3.86], [1.45, 3.5], [1.45, 0.95]], Lc), -Lc / 2, 0, 0);
+      b.box(TM.roof, Lc - 0.5, 0.06, 1.5, 0, 4.02, 0);
+      b.box(TM.roof, 2.6, 0.32, 1.7, 0.7, 4.18, 0);
+      for (const s of [1, -1]) {
+        const z = s * 1.45;
+        b.box(TM.pink, Lc + 0.02, 0.34, 0.05, 0, 1.82, z); b.box(TM.pink, Lc + 0.02, 0.1, 0.05, 0, 3.42, z);
+        for (const dx of [-2.9, 2.5]) { b.box(TM.roof, 1.2, 2.3, 0.08, dx, 2.33, z); b.box(TM.win, 0.38, 1.0, 0.12, dx - 0.27, 2.75, z); b.box(TM.win, 0.38, 1.0, 0.12, dx + 0.27, 2.75, z); }
+        for (const [wx, ww] of [[-4.1, 0.9], [-1.175, 1.7], [0.775, 1.7], [3.95, 0.9]]) b.box(TM.win, ww, 0.95, 0.1, wx, 2.75, z);
+      }
+      const fxp = Lc / 2;                                                       // cab face
+      b.box(TM.win, 0.08, 1.05, 2.3, fxp, 2.8, 0); b.box(TM.pink, 0.06, 0.34, 2.9, fxp, 1.82, 0);
+      b.box(TM.dark, 0.08, 0.3, 1.3, fxp, 3.6, 0); b.box(TM.dark, 0.3, 0.45, 2.5, fxp - 0.1, 0.84, 0);
+      for (const s of [1, -1]) b.box(front > 0 ? TM.head : TM.tail, 0.1, 0.22, 0.44, fxp, 1.36, s * 0.95);
+      b.box(TM.dark, Lc - 1.2, 0.42, 2.3, 0, 0.92, 0);
+      for (const bx of [-2.9, 2.9]) {
+        b.box(TM.dark, 2.1, 0.3, 2.0, bx, 0.7, 0);
+        for (const wx of [-0.65, 0.65]) for (const s of [1, -1]) b.cyl(TM.roof, 0.3, 0.3, 0.14, 10, bx + wx, RAIL_Y + 0.3, s * 0.72, Math.PI / 2);
+      }
+      if (front > 0) {                                                          // single-arm pantograph
+        const x0 = -2.6;
+        b.box(TM.dark, 1.5, 0.07, 1.1, x0, 4.13, 0);
+        for (const dx of [-0.6, 0.6]) for (const s of [1, -1]) b.cyl(TM.white, 0.07, 0.07, 0.14, 6, x0 + dx, 4.06, s * 0.45);
+        b.seg(TM.dark, v3(x0 - 0.55, 4.17, 0), v3(x0 + 0.38, 4.78, 0), 0.08);
+        b.seg(TM.dark, v3(x0 + 0.38, 4.78, 0), v3(x0 - 0.2, WIRE_Y - 0.06, 0), 0.07);
+        b.box(TM.dark, 0.16, 0.05, 1.5, x0 - 0.2, WIRE_Y - 0.05, 0);
+      } else b.box(TM.roof, 1.3, 0.2, 1.2, -2.6, 4.12, 0);
+    });
+  }
+  b.box(TM.dark, 0.52, 2.5, 1.9, 0, 2.35, 0);                                   // gangway
+  b.build(train);
+})();
+scene.add(train);
+const trainLight = new THREE.PointLight(0xfff0c8, 0, 20, 1.6);
+trainLight.position.set(TRAIN_HALF + 1.2, 1.9, 0); train.add(trainLight);
+
+/* ───────── drifting petals (instanced) ───────── */
+const PETALS = 460;
+const petalShape = new THREE.Shape([[0, -0.11], [0.08, -0.02], [0.07, 0.07], [0.025, 0.11], [0, 0.075], [-0.025, 0.11], [-0.07, 0.07], [-0.08, -0.02]].map(p => new THREE.Vector2(p[0], p[1])));
+const petalMat = reg(new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), { outline: false, cast: false });   // unlit so both faces stay pink
+const petals = new THREE.InstancedMesh(new THREE.ShapeGeometry(petalShape), petalMat, PETALS);
+petals.frustumCulled = false; petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const petalData = [];
+{
+  const cols = [0xffc1d8, 0xffa9c9, 0xffdbe8, 0xfff1f6].map(c => new THREE.Color(c));
+  for (let i = 0; i < PETALS; i++) {
+    petalData.push({ x: rr(-40, 40), y: rr(0, 17), z: rr(-25, 25), vy: rr(0.55, 1.25), ph: rr(0, 6.283), amp: rr(0.3, 1.1), sx: rr(-2.2, 2.2), sy: rr(-2.6, 2.6), sz: rr(-1.6, 1.6), sc: rr(0.7, 1.25) });
+    petals.setColorAt(i, pick(cols));
+  }
+}
+function updatePetals(t) {
+  for (let i = 0; i < PETALS; i++) {
+    const d = petalData[i];
+    _p.set(wrap(d.x + t * (1.5 + d.amp * 0.4) + Math.sin(t * 0.9 + d.ph) * d.amp, -40, 40),
+      17.1 - wrap(d.y + t * d.vy, 0, 17),
+      wrap(d.z + t * 0.45 + Math.cos(t * 0.7 + d.ph * 1.7) * d.amp * 0.8, -25, 25));
+    _m.compose(_p, _q.setFromEuler(_e.set(d.ph + t * d.sx, d.ph * 2 + t * d.sy, t * d.sz)), _s.setScalar(d.sc));
+    petals.setMatrixAt(i, _m);
+  }
+  petals.instanceMatrix.needsUpdate = true;
+}
+updatePetals(0); scene.add(petals);
+
+/* ───────── lights ───────── */
+const hemi = new THREE.HemisphereLight(0xe2f4ff, 0xd6ccb0, 1.25);
+const sun = new THREE.DirectionalLight(0xfff3df, 1.9);
+sun.position.set(-28, 46, 30); sun.castShadow = true;
+const smallScreen = Math.min(innerWidth, innerHeight) < 700;
+sun.shadow.mapSize.setScalar(smallScreen ? 2048 : 4096);
+Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 40, bottom: -40, near: 8, far: 150 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
+scene.add(hemi, sun, sun.target);
+
+const glowTex = glowTexture();
+const glowMat = color => new THREE.SpriteMaterial({ map: glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 });
+const glow = (mat, p, size) => { const s = new THREE.Sprite(mat); s.position.copy(p); s.scale.setScalar(size); fx.add(s); return s; };
+const lampGlow = glowMat(0xffd9a0), crossGlowA = glowMat(0xff3a2c), crossGlowB = glowMat(0xff3a2c), headGlow = glowMat(0xfff0c4), tailGlow = glowMat(0xff3838);
+const LAMP = { plat: [24, 15, 4.2], street: [52, 20, 5.2], shelter: [8, 9, 3.2] };   // intensity, range, glow size
+const lampLights = lampPts.map(({ p, k }) => {
+  const [power, range, size] = LAMP[k], l = new THREE.PointLight(0xffdfae, 0, range, 1.7);
+  l.position.copy(p); l.userData.power = power; scene.add(l); glow(lampGlow, p, size); return l;
+});
+for (const { p, a } of crossLampPts) glow(a ? crossGlowA : crossGlowB, p, 1.7);
+const headSprites = [1, -1].map(s => glow(headGlow, v3(0, 1.36, s * 0.95), 2.6));
+const tailSprites = [1, -1].map(s => glow(tailGlow, v3(0, 1.36, s * 0.95), 1.5));
+
+const starMats = [1.6, 2.6].map((size, k) => {
+  const n = k ? 160 : 620, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const y = rr(-0.4, 1), a = rr(0, 6.283), r = Math.sqrt(1 - y * y) * 900; pos.set([Math.cos(a) * r, y * 900, Math.sin(a) * r], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ color: k ? 0xfff4d8 : 0xdfe6ff, size, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false });
+  fx.add(new THREE.Points(g, m)); return m;
+});
+
+/* ───────── day / night ───────── */
+const skyNight = document.getElementById('sky-night');
+const C = (a, b) => [new THREE.Color(a), new THREE.Color(b)];
+const cHemiSky = C(0xe2f4ff, 0x5f72c8), cHemiGround = C(0xd6ccb0, 0x2c2f5c), cSun = C(0xfff3df, 0x9db6ff), cPetal = C(0xffffff, 0x6f76b8), cGlass = C(0x9ccfe6, 0x27305c);
+let night = 0, nightTarget = 0;
+function applyNight(t) {
+  skyNight.style.opacity = t.toFixed(3);
+  hemi.color.lerpColors(cHemiSky[0], cHemiSky[1], t); hemi.groundColor.lerpColors(cHemiGround[0], cHemiGround[1], t);
+  hemi.intensity = lerp(1.25, 1.0, t);
+  sun.color.lerpColors(cSun[0], cSun[1], t); sun.intensity = lerp(1.9, 0.62, t);
+  M.windowLit.emissiveIntensity = t; TM.win.emissiveIntensity = t * 0.95; M.bulb.emissiveIntensity = t * 1.2;
+  TM.head.emissiveIntensity = 0.25 + t; TM.tail.emissiveIntensity = 0.15 + t;
+  M.vending.emissiveIntensity = t * 0.8; M.sign.emissiveIntensity = t * 0.22; M.nameboard.emissiveIntensity = t * 0.3; M.clock.emissiveIntensity = t * 0.45;
+  // point lights are hidden by day so the daytime shaders don't pay for them
+  for (const l of lampLights) { l.intensity = l.userData.power * t; l.visible = t > 0; }
+  trainLight.visible = t > 0;
+  lampGlow.opacity = t * 0.9; starMats[0].opacity = t * 0.85; starMats[1].opacity = t;
+  petalMat.color.lerpColors(cPetal[0], cPetal[1], t); M.windowDark.color.lerpColors(cGlass[0], cGlass[1], t);
+}
+applyNight(0);
+
+/* ───────── timetable: one loop every 32 s ───────── */
+const LOOP = 32, TT = { arrive0: 1, arrive1: 9.5, depart0: 16.5, depart1: 25.5, warn0: 12.5, down0: 13.5, down1: 15.5, up0: 24.8, up1: 26.6 };
+const X_HIDE = 37, X_STOP = -1, PARK = 11, ARM_UP = 1.38;
+function trainX(t) {
+  if (t < TT.arrive0) return -X_HIDE;
+  if (t < TT.arrive1) { const p = 1 - (t - TT.arrive0) / (TT.arrive1 - TT.arrive0); return -X_HIDE + (X_STOP + X_HIDE) * (1 - p * p); }
+  if (t < TT.depart0) return X_STOP;
+  if (t < TT.depart1) { const p = (t - TT.depart0) / (TT.depart1 - TT.depart0); return X_STOP + (X_HIDE - X_STOP) * p * p; }
+  return X_HIDE;
+}
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motionQuery.matches;
+let tt = reduced ? PARK : 0.3;     // reduced motion: the train waits at the platform until called
+let calling = false, playOnce = false, wrapped = false, petalClock = 0;
+
+function updateTimeline(dt) {
+  if (!reduced || playOnce) {
+    let speed = 1;
+    if (calling) speed = (tt >= TT.depart1 || tt < TT.arrive0) ? 8 : tt >= TT.depart0 ? 1.75 : tt >= TT.arrive1 ? 4 : 1;
+    tt += dt * speed;
+    if (tt >= LOOP) { tt -= LOOP; wrapped = true; setCalling(false); }
+    if (reduced && wrapped && tt >= PARK) { tt = PARK; playOnce = false; wrapped = false; }
+  }
+  const x = trainX(tt);
+  train.position.x = x; train.visible = Math.abs(x) < X_HIDE - 0.01;
+  const down = smooth((tt - TT.down0) / (TT.down1 - TT.down0)) * (1 - smooth((tt - TT.up0) / (TT.up1 - TT.up0)));
+  for (const arm of arms) arm.rotation.z = ARM_UP * (1 - down);
+  const warn = tt >= TT.warn0 && tt < TT.up1, phase = Math.floor((tt - TT.warn0) * 2) % 2;
+  const onA = warn && (reduced || phase === 0), onB = warn && (reduced || phase === 1);   // steady when motion is reduced
+  M.lampA.emissiveIntensity = onA ? 1.5 : 0; M.lampB.emissiveIntensity = onB ? 1.5 : 0;
+  const cg = 0.3 + 0.7 * night;
+  crossGlowA.opacity = onA ? cg : 0; crossGlowB.opacity = onB ? cg : 0;
+  // train lights; nothing may leak out of the tunnels
+  const fxX = x + TRAIN_HALF, rx = x - TRAIN_HALF, showF = train.visible && Math.abs(fxX) < CLIP_X - 0.3, showR = train.visible && Math.abs(rx) < CLIP_X - 0.3;
+  headSprites.forEach(s => { s.position.x = fxX + 0.1; }); tailSprites.forEach(s => { s.position.x = rx - 0.1; });
+  headGlow.opacity = showF ? 0.25 + 0.75 * night : 0; tailGlow.opacity = showR ? 0.15 + 0.75 * night : 0;
+  trainLight.intensity = showF ? 46 * night : 0;
+}
+
+/* ───────── camera + controls ───────── */
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, -0.5, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.07; controls.enablePan = false;
+controls.minPolarAngle = 0.12; controls.maxPolarAngle = Math.PI * 0.57;
+controls.autoRotate = !reduced; controls.autoRotateSpeed = 0.42;
+let fit = 1;
+function fitDistance() {                        // keep the whole block in view from phone portrait to ultrawide
+  const a = innerWidth / innerHeight;
+  camera.fov = a < 0.8 ? 44 : a < 1.25 ? 38 : 32;
+  const t = Math.tan(camera.fov * Math.PI / 360);
+  return Math.max((a < 1 ? 46 : 55) / (t * a), 31 / t);
+}
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  const d = fitDistance(), off = camera.position.clone().sub(controls.target).multiplyScalar(d / fit);
+  fit = d; camera.position.copy(controls.target).add(off); camera.updateProjectionMatrix();
+  controls.minDistance = d * 0.28; controls.maxDistance = d * 2.2;
+  const th = 0.0029 * Math.sqrt(Math.min(1, w / h));     // outline width is in clip space; ease it off on tall screens
+  for (const m of allMats) m.userData.outlineParameters.thickness = th;
+}
+{
+  const az = 0.52, el = 0.5;
+  camera.position.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).add(controls.target);
+  resize();
+}
+addEventListener('resize', resize);
+
+/* ───────── UI ───────── */
+const btnTime = document.getElementById('btn-time'), btnOrbit = document.getElementById('btn-orbit'), btnTrain = document.getElementById('btn-train');
+function setNight(on) {
+  nightTarget = on ? 1 : 0;
+  btnTime.setAttribute('aria-pressed', String(on)); btnTime.querySelector('.label').textContent = on ? 'Night' : 'Day';
+  document.body.classList.toggle('night', on);
+  document.querySelector('meta[name="theme-color"]').content = on ? '#171b47' : '#bfe4f6';
+}
+function setOrbit(on) {
+  controls.autoRotate = on;
+  btnOrbit.setAttribute('aria-pressed', String(on)); btnOrbit.querySelector('.state').textContent = on ? 'on' : 'off';
+}
+function setCalling(on) { calling = on; btnTrain.classList.toggle('busy', on || playOnce); }
+function callTrain() {
+  if (reduced) { if (!playOnce) { playOnce = true; wrapped = false; btnTrain.classList.add('busy'); } return; }
+  if (tt >= TT.arrive1) setCalling(true);       // otherwise one is already on its way
+  else { btnTrain.classList.add('busy'); setTimeout(() => btnTrain.classList.toggle('busy', calling), 600); }
+}
+btnTime.addEventListener('click', () => setNight(nightTarget === 0));
+btnOrbit.addEventListener('click', () => setOrbit(!controls.autoRotate));
+btnTrain.addEventListener('click', callTrain);
+setOrbit(!reduced);
+motionQuery.addEventListener('change', e => {
+  reduced = e.matches; setOrbit(!reduced); playOnce = false; wrapped = false; setCalling(false);
+  if (reduced) tt = PARK;
+});
+
+/* ───────── frame loop ───────── */
+let last = performance.now(), stats = { calls: 0, triangles: 0 };
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (night !== nightTarget) {
+    night = nightTarget > night ? Math.min(nightTarget, night + dt / 1.1) : Math.max(nightTarget, night - dt / 1.1);
+    applyNight(smooth(night));
+  }
+  updateTimeline(dt);
+  if (!reduced) { petalClock += dt; updatePetals(petalClock); }
+  if (reduced && !playOnce) btnTrain.classList.remove('busy');
+  controls.update(dt);
+
+  renderer.info.reset();
+  renderer.clear();
+  renderer.render(scene, camera);               // toon pass (+ shadow map)
+  effect.renderOutline(scene, camera);          // ink pass
+  renderer.render(fx, camera);                  // additive glows and stars on top
+  stats = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// small hook for inspection from the console
+window.harukaze = {
+  get stats() { return { ...stats, staticMeshes }; },
+  get time() { return tt; },
+  seek(t) { tt = wrap(t, 0, LOOP); },
+  view(az, el, k = 1) { const d = fit * k; camera.position.set(Math.sin(az) * Math.cos(el) * d, Math.sin(el) * d, Math.cos(az) * Math.cos(el) * d).add(controls.target); },
+};
+</script>
+<noscript><p style="position:fixed;inset:0;margin:auto;height:fit-content;text-align:center;font-family:sans-serif">This diorama needs JavaScript and WebGL.</p></noscript>
+</body>
+</html>
